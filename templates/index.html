@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Earthquake Visualization</title>
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <style>
+        #cesiumContainer {
+            width: 100%;
+            height: 80vh;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        .earthquake-info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 999;
+        }
+        .filter-form {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 999;
+        }
+        .coordinates {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 999;
+        }
+    </style>
+</head>
+<body>
+    <div id="cesiumContainer"></div>
+    <div class="coordinates">
+        <h4>Güncel Koordinatlar</h4>
+        <p id="currentCoordinates">Lat: 0, Lon: 0</p>
+    </div>
+    <div class="filter-form">
+        <h4>Filtrele</h4>
+        <form id="filterForm">
+            <label for="minMagnitude">Minimum Magnitüd:</label>
+            <input type="number" id="minMagnitude" name="minMagnitude" value="4.5" step="0.1" min="0" required>
+            <br>
+            <label for="dateRange">Tarih Aralığı:</label>
+            <select id="dateRange">
+                <option value="24h">Son 24 Saat</option>
+                <option value="3d">Son 3 Gün</option>
+                <option value="1w">Son 1 Hafta</option>
+                <option value="1m">Son 1 Ay</option>
+                <option value="1y">Son 1 Yıl</option>
+                <option value="custom">Özel</option>
+            </select>
+            <br>
+            <div class="form-group">
+                <label for="startDate">Başlangıç Tarihi:</label>
+                <input type="date" id="startDate" name="startDate">
+            </div>
+            <div class="form-group">
+                <label for="endDate">Bitiş Tarihi:</label>
+                <input type="date" id="endDate" name="endDate">
+            </div>
+            <div class="form-group">
+                <label for="minDepth">Minimum Derinlik (km):</label>
+                <input type="number" class="form-control" id="minDepth" name="minDepth" value="0">
+            </div>
+            <div class="form-group">
+                <label for="maxDepth">Maximum Derinlik (km):</label>
+                <input type="number" class="form-control" id="maxDepth" name="maxDepth" value="700">
+            </div>
+            <button type="submit">Filtrele</button>
+        </form>
+        <br>
+        <label>
+            <input type="checkbox" id="toggleLabels" checked>
+            Deprem bilgilerini göster
+        </label>
+    </div>
+    <script>
+        // Cesium ion access token
+        Cesium.Ion.defaultAccessToken = '{{ cesium_token }}';
+
+        let viewer;
+        let showLabels = true;
+
+        async function initCesium() {
+            const terrainProvider = await Cesium.createWorldTerrainAsync();
+            
+            // Initialize the Cesium Viewer
+            viewer = new Cesium.Viewer('cesiumContainer', {
+                terrainProvider: terrainProvider,
+                animation: false,
+                baseLayerPicker: false,
+                fullscreenButton: false,
+                vrButton: false,
+                geocoder: false,
+                homeButton: false,
+                infoBox: true,
+                sceneModePicker: false,
+                selectionIndicator: false,
+                timeline: false,
+                navigationHelpButton: false,
+                scene3DOnly: true,
+                imageryProvider: new Cesium.TileMapServiceImageryProvider({
+                    url: Cesium.buildModuleUrl('Assets/Textures/NaturalEarthII')
+                })
+            });
+
+            // Enable lighting based on sun/moon positions
+            viewer.scene.globe.enableLighting = true;
+
+            // Add Bing Maps imagery from Cesium ion
+            try {
+                const imageryLayer = await Cesium.ImageryLayer.fromProviderAsync(
+                    await Cesium.IonImageryProvider.fromAssetId(3)
+                );
+                viewer.imageryLayers.add(imageryLayer);
+            } catch (error) {
+                console.error('Error loading imagery:', error);
+            }
+
+            // Depremleri çek ve haritaya ekle
+            fetchEarthquakes();
+
+            // Koordinatları güncelle
+            updateCoordinates();
+            viewer.clock.onTick.addEventListener(updateCoordinates);
+        }
+
+        function updateCoordinates() {
+            const camera = viewer.camera;
+            const position = camera.positionCartographic;
+            const lon = Cesium.Math.toDegrees(position.longitude);
+            const lat = Cesium.Math.toDegrees(position.latitude);
+            document.getElementById('currentCoordinates').innerText = `Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}`;
+        }
+
+        async function fetchEarthquakes() {
+            const minMagnitude = document.getElementById('minMagnitude').value;
+            
+            // Tarih kontrolü
+            let startDate, endDate;
+            const dateRange = document.getElementById('dateRange').value;
+            const now = new Date();
+
+            if (dateRange === '24h') {
+                startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                endDate = now;
+            } else if (dateRange === '3d') {
+                startDate = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+                endDate = now;
+            } else if (dateRange === '1w') {
+                startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                endDate = now;
+            } else if (dateRange === '1m') {
+                startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                endDate = now;
+            } else if (dateRange === '1y') {
+                startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+                endDate = now;
+            } else {
+                startDate = new Date(document.getElementById('startDate').value);
+                endDate = new Date(document.getElementById('endDate').value);
+            }
+
+            const minDepth = document.getElementById('minDepth').value;
+            const maxDepth = document.getElementById('maxDepth').value;
+
+            // Görüntülenen alanın sınırlarını al
+            const rectangle = viewer.camera.computeViewRectangle();
+            const west = Cesium.Math.toDegrees(rectangle.west);
+            const east = Cesium.Math.toDegrees(rectangle.east);
+            const south = Cesium.Math.toDegrees(rectangle.south);
+            const north = Cesium.Math.toDegrees(rectangle.north);
+
+            // Merkez noktayı hesapla
+            const centerLon = (west + east) / 2;
+            const centerLat = (south + north) / 2;
+            
+            // Yarıçapı hesapla (en uzak köşeye olan mesafe)
+            const radius = Math.max(
+                Cesium.Cartesian3.distance(
+                    Cesium.Cartesian3.fromDegrees(west, south),
+                    Cesium.Cartesian3.fromDegrees(centerLon, centerLat)
+                ),
+                Cesium.Cartesian3.distance(
+                    Cesium.Cartesian3.fromDegrees(east, north),
+                    Cesium.Cartesian3.fromDegrees(centerLon, centerLat)
+                )
+            ) / 1000; // metreyi kilometreye çevir
+
+            const response = await fetch(`/get_earthquakes?minMagnitude=${minMagnitude}&minDepth=${minDepth}&maxDepth=${maxDepth}&startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}&lat=${centerLat}&lon=${centerLon}&radius=${radius}`);
+            const data = await response.json();
+            data.features.forEach(earthquake => {
+                addEarthquake(earthquake);
+            });
+        }
+
+        function addEarthquake(earthquake) {
+            const lon = earthquake.geometry.coordinates[0];
+            const lat = earthquake.geometry.coordinates[1];
+            const depth = earthquake.geometry.coordinates[2];
+            
+            // Depremin merkez noktası (yeraltında)
+            const position = Cesium.Cartesian3.fromDegrees(
+                lon,
+                lat,
+                -depth * -1000 // km'yi metreye çeviriyoruz
+            );
+
+            // Yeryüzündeki nokta (depremin tam üstü)
+            const surfacePosition = Cesium.Cartesian3.fromDegrees(
+                lon,
+                lat,
+                0
+            );
+
+            const magnitude = earthquake.properties.mag;
+
+            // Derinlik çizgisi için renk (magnitüde göre)
+            const color = Cesium.Color.fromHsl(
+                (1.0 - Math.min(magnitude / 10, 1)) * 0.5, // Magnitüd arttıkça kırmızıya yaklaşır
+                1.0,
+                0.5
+            );
+
+            // Derinlik çizgisi
+            viewer.entities.add({
+                polyline: {
+                    positions: [surfacePosition, position],
+                    width: Math.max(2, magnitude),
+                    material: new Cesium.PolylineGlowMaterialProperty({
+                        glowPower: 0.2,
+                        color: color
+                    })
+                }
+            });
+
+            // Deprem noktası
+            viewer.entities.add({
+                position: position,
+                point: {
+                    pixelSize: Math.max(10, magnitude * 3),
+                    color: color,
+                    outlineColor: Cesium.Color.WHITE,
+                    outlineWidth: 2,
+                    scaleByDistance: new Cesium.NearFarScalar(1.5e2, 2.0, 1.5e7, 0.5)
+                },
+                label: {
+                    text: `M${magnitude.toFixed(1)}\n${depth} km\n${earthquake.properties.place}`,
+                    font: '14px sans-serif',
+                    fillColor: Cesium.Color.WHITE,
+                    outlineColor: Cesium.Color.BLACK,
+                    outlineWidth: 2,
+                    style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                    verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+                    pixelOffset: new Cesium.Cartesian2(0, -10),
+                    distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 10000000),
+                    show: showLabels
+                },
+                description: `
+                    <h2>Deprem Bilgileri</h2>
+                    <p>Yer: ${earthquake.properties.place}</p>
+                    <p>Magnitüd: ${magnitude}</p>
+                    <p>Derinlik: ${depth} km</p>
+                    <p>Zaman: ${new Date(earthquake.properties.time).toLocaleString()}</p>
+                `
+            });
+
+            // Yüzeydeki işaret noktası
+            viewer.entities.add({
+                position: surfacePosition,
+                point: {
+                    pixelSize: 5,
+                    color: color.withAlpha(0.5),
+                    outlineColor: Cesium.Color.WHITE,
+                    outlineWidth: 1
+                }
+            });
+        }
+
+        document.getElementById('filterForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // Formun varsayılan davranışını engelle
+            viewer.entities.removeAll(); // Önceki depremleri temizle
+            fetchEarthquakes(); // Yeni depremleri çek
+        });
+
+        document.getElementById('toggleLabels').addEventListener('change', function() {
+            showLabels = this.checked;
+            viewer.entities.values.forEach(entity => {
+                if (entity.label) {
+                    entity.label.show = showLabels;
+                }
+            });
+        });
+
+        initCesium();
+    </script>
+</body>
+</html>
