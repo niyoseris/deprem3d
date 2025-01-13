@@ -46,47 +46,47 @@
 <body>
     <div id="cesiumContainer"></div>
     <div class="coordinates">
-        <h4>Güncel Koordinatlar</h4>
+        <h4>Current Coordinates</h4>
         <p id="currentCoordinates">Lat: 0, Lon: 0</p>
     </div>
     <div class="filter-form">
-        <h4>Filtrele</h4>
+        <h4>Filter</h4>
         <form id="filterForm">
-            <label for="minMagnitude">Minimum Magnitüd:</label>
+            <label for="minMagnitude">Minimum Magnitude:</label>
             <input type="number" id="minMagnitude" name="minMagnitude" value="4.5" step="0.1" min="0" required>
             <br>
-            <label for="dateRange">Tarih Aralığı:</label>
+            <label for="dateRange">Date Range:</label>
             <select id="dateRange">
-                <option value="24h">Son 24 Saat</option>
-                <option value="3d">Son 3 Gün</option>
-                <option value="1w">Son 1 Hafta</option>
-                <option value="1m">Son 1 Ay</option>
-                <option value="1y">Son 1 Yıl</option>
-                <option value="custom">Özel</option>
+                <option value="24h">Last 24 Hours</option>
+                <option value="3d">Last 3 Days</option>
+                <option value="1w">Last 1 Week</option>
+                <option value="1m">Last 1 Month</option>
+                <option value="1y">Last 1 Year</option>
+                <option value="custom">Custom</option>
             </select>
             <br>
             <div class="form-group">
-                <label for="startDate">Başlangıç Tarihi:</label>
+                <label for="startDate">Start Date:</label>
                 <input type="date" id="startDate" name="startDate">
             </div>
             <div class="form-group">
-                <label for="endDate">Bitiş Tarihi:</label>
+                <label for="endDate">End Date:</label>
                 <input type="date" id="endDate" name="endDate">
             </div>
             <div class="form-group">
-                <label for="minDepth">Minimum Derinlik (km):</label>
+                <label for="minDepth">Minimum Depth (km):</label>
                 <input type="number" class="form-control" id="minDepth" name="minDepth" value="0">
             </div>
             <div class="form-group">
-                <label for="maxDepth">Maximum Derinlik (km):</label>
+                <label for="maxDepth">Maximum Depth (km):</label>
                 <input type="number" class="form-control" id="maxDepth" name="maxDepth" value="700">
             </div>
-            <button type="submit">Filtrele</button>
+            <button type="submit">Filter</button>
         </form>
         <br>
         <label>
             <input type="checkbox" id="toggleLabels" checked>
-            Deprem bilgilerini göster
+            Show Earthquake Information
         </label>
     </div>
     <script>
@@ -132,10 +132,10 @@
                 console.error('Error loading imagery:', error);
             }
 
-            // Depremleri çek ve haritaya ekle
+            // Fetch earthquakes and add them to the map
             fetchEarthquakes();
 
-            // Koordinatları güncelle
+            // Update coordinates
             updateCoordinates();
             viewer.clock.onTick.addEventListener(updateCoordinates);
         }
@@ -151,7 +151,7 @@
         async function fetchEarthquakes() {
             const minMagnitude = document.getElementById('minMagnitude').value;
             
-            // Tarih kontrolü
+            // Date range check
             let startDate, endDate;
             const dateRange = document.getElementById('dateRange').value;
             const now = new Date();
@@ -179,18 +179,18 @@
             const minDepth = document.getElementById('minDepth').value;
             const maxDepth = document.getElementById('maxDepth').value;
 
-            // Görüntülenen alanın sınırlarını al
+            // Get the boundaries of the displayed area
             const rectangle = viewer.camera.computeViewRectangle();
             const west = Cesium.Math.toDegrees(rectangle.west);
             const east = Cesium.Math.toDegrees(rectangle.east);
             const south = Cesium.Math.toDegrees(rectangle.south);
             const north = Cesium.Math.toDegrees(rectangle.north);
 
-            // Merkez noktayı hesapla
+            // Calculate the center point
             const centerLon = (west + east) / 2;
             const centerLat = (south + north) / 2;
             
-            // Yarıçapı hesapla (en uzak köşeye olan mesafe)
+            // Calculate the radius (distance to the farthest corner)
             const radius = Math.max(
                 Cesium.Cartesian3.distance(
                     Cesium.Cartesian3.fromDegrees(west, south),
@@ -200,7 +200,7 @@
                     Cesium.Cartesian3.fromDegrees(east, north),
                     Cesium.Cartesian3.fromDegrees(centerLon, centerLat)
                 )
-            ) / 1000; // metreyi kilometreye çevir
+            ) / 1000; // convert meters to kilometers
 
             const response = await fetch(`/get_earthquakes?minMagnitude=${minMagnitude}&minDepth=${minDepth}&maxDepth=${maxDepth}&startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}&lat=${centerLat}&lon=${centerLon}&radius=${radius}`);
             const data = await response.json();
@@ -214,14 +214,14 @@
             const lat = earthquake.geometry.coordinates[1];
             const depth = earthquake.geometry.coordinates[2];
             
-            // Depremin merkez noktası (yeraltında)
+            // Earthquake center point (underground)
             const position = Cesium.Cartesian3.fromDegrees(
                 lon,
                 lat,
-                -depth * -1000 // km'yi metreye çeviriyoruz
+                -depth * -1000 // convert km to meters
             );
 
-            // Yeryüzündeki nokta (depremin tam üstü)
+            // Surface point (directly above the earthquake)
             const surfacePosition = Cesium.Cartesian3.fromDegrees(
                 lon,
                 lat,
@@ -230,14 +230,14 @@
 
             const magnitude = earthquake.properties.mag;
 
-            // Derinlik çizgisi için renk (magnitüde göre)
+            // Depth line color (based on magnitude)
             const color = Cesium.Color.fromHsl(
-                (1.0 - Math.min(magnitude / 10, 1)) * 0.5, // Magnitüd arttıkça kırmızıya yaklaşır
+                (1.0 - Math.min(magnitude / 10, 1)) * 0.5, // Magnitude increases towards red
                 1.0,
                 0.5
             );
 
-            // Derinlik çizgisi
+            // Depth line
             viewer.entities.add({
                 polyline: {
                     positions: [surfacePosition, position],
@@ -249,7 +249,7 @@
                 }
             });
 
-            // Deprem noktası
+            // Earthquake point
             viewer.entities.add({
                 position: position,
                 point: {
@@ -272,15 +272,15 @@
                     show: showLabels
                 },
                 description: `
-                    <h2>Deprem Bilgileri</h2>
-                    <p>Yer: ${earthquake.properties.place}</p>
-                    <p>Magnitüd: ${magnitude}</p>
-                    <p>Derinlik: ${depth} km</p>
-                    <p>Zaman: ${new Date(earthquake.properties.time).toLocaleString()}</p>
+                    <h2>Earthquake Information</h2>
+                    <p>Location: ${earthquake.properties.place}</p>
+                    <p>Magnitude: ${magnitude}</p>
+                    <p>Depth: ${depth} km</p>
+                    <p>Time: ${new Date(earthquake.properties.time).toLocaleString()}</p>
                 `
             });
 
-            // Yüzeydeki işaret noktası
+            // Surface point marker
             viewer.entities.add({
                 position: surfacePosition,
                 point: {
@@ -293,9 +293,9 @@
         }
 
         document.getElementById('filterForm').addEventListener('submit', function(event) {
-            event.preventDefault(); // Formun varsayılan davranışını engelle
-            viewer.entities.removeAll(); // Önceki depremleri temizle
-            fetchEarthquakes(); // Yeni depremleri çek
+            event.preventDefault(); // Prevent default form behavior
+            viewer.entities.removeAll(); // Clear previous earthquakes
+            fetchEarthquakes(); // Fetch new earthquakes
         });
 
         document.getElementById('toggleLabels').addEventListener('change', function() {

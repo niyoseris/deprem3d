@@ -4,7 +4,7 @@ import requests
 import os
 from dotenv import load_dotenv
 
-# .env dosyasını yükle
+# Load the .env file
 load_dotenv()
 
 app = Flask(__name__)
@@ -16,17 +16,17 @@ def index():
 @app.route('/get_earthquakes')
 def get_earthquakes():
     try:
-        # Kullanıcıdan gelen parametreleri al
+        # Get parameters from the user
         min_magnitude = request.args.get('minMagnitude', default=4.5, type=float)
         
-        # Varsayılan tarih aralığı: son 1 ay
+        # Default date range: last 1 month
         default_start = (datetime.utcnow() - timedelta(days=30)).strftime('%Y-%m-%d')
         default_end = datetime.utcnow().strftime('%Y-%m-%d')
         
         start_date = request.args.get('startDate', default=default_start)
         end_date = request.args.get('endDate', default=default_end)
         
-        # Tarihleri doğrula
+        # Validate dates
         try:
             datetime.strptime(start_date, '%Y-%m-%d')
             datetime.strptime(end_date, '%Y-%m-%d')
@@ -39,11 +39,11 @@ def get_earthquakes():
         lon = request.args.get('lon', type=float)
         radius = request.args.get('radius', type=float)
 
-        # Tarih aralığını kontrol et
+        # Check date range
         if start_date > end_date:
             return jsonify({'error': 'Start date must be before end date.'}), 400
         
-        # USGS API'den depremleri çek
+        # Get earthquakes from the USGS API
         url = 'https://earthquake.usgs.gov/fdsnws/event/1/query'
         params = {
             'format': 'geojson',
@@ -54,19 +54,19 @@ def get_earthquakes():
             'maxdepth': max_depth
         }
 
-        # Koordinat parametreleri varsa ekle
+        # Add coordinate parameters if they exist
         if lat is not None and lon is not None and radius is not None:
             params['latitude'] = lat
             params['longitude'] = lon
-            params['maxradiuskm'] = radius  # Doğrudan km cinsinden kullan
+            params['maxradiuskm'] = radius  # Use km directly
         
-        print(f'Requesting URL: {url} with params: {params}')  # Debug için URL'i yazdır
+        print(f'Requesting URL: {url} with params: {params}')  # Print the URL for debugging
         
         response = requests.get(url, params=params)
         response.raise_for_status()
         return jsonify(response.json())
     except Exception as e:
-        print(f'Error: {str(e)}')  # Hata mesajını yazdır
+        print(f'Error: {str(e)}')  # Print the error message
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
