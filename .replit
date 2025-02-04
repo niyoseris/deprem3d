@@ -1,0 +1,12 @@
+modules = ["web", "python-3.12"]
+
+[nix]
+channel = "stable-24_05"
+
+[[ports]]
+localPort = 5001
+externalPort = 8000
+
+[deployment]
+deploymentTarget = "cloudrun"
+run = ["sh", "-c", "python app.py"]
