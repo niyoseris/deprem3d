@@ -18,7 +18,7 @@ def get_earthquakes():
     try:
         # Get parameters from the user
         source = request.args.get('source', default='usgs', type=str)
-        min_magnitude = request.args.get('minMagnitude', default=4.5, type=float)
+        min_magnitude = request.args.get('minMagnitude', default=1.0, type=float)
         
         # Choose data source
         if source == 'usgs':
