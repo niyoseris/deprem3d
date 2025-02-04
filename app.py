@@ -17,7 +17,18 @@ def index():
 def get_earthquakes():
     try:
         # Get parameters from the user
+        source = request.args.get('source', default='usgs', type=str)
         min_magnitude = request.args.get('minMagnitude', default=4.5, type=float)
+        
+        # Choose data source
+        if source == 'usgs':
+            url = 'https://earthquake.usgs.gov/fdsnws/event/1/query'
+        elif source == 'emsc':
+            url = 'https://www.seismicportal.eu/fdsnws/event/1/query'
+        elif source == 'kandilli':
+            url = 'http://www.koeri.boun.edu.tr/scripts/lst0.asp'
+        else:
+            return jsonify({'error': 'Invalid data source'}), 400
         
         # Default date range: last 1 month
         default_start = (datetime.utcnow() - timedelta(days=30)).strftime('%Y-%m-%d')

@@ -52,6 +52,13 @@
     <div class="filter-form">
         <h4>Filter</h4>
         <form id="filterForm">
+            <label for="source">Data Source:</label>
+            <select id="source" name="source">
+                <option value="usgs">USGS (Worldwide)</option>
+                <option value="emsc">EMSC (European-Mediterranean)</option>
+                <option value="kandilli">Kandilli Observatory (Turkey)</option>
+            </select>
+            <br>
             <label for="minMagnitude">Minimum Magnitude:</label>
             <input type="number" id="minMagnitude" name="minMagnitude" value="4.5" step="0.1" min="0" required>
             <br>
@@ -213,7 +220,8 @@
                 )
             ) / 1000; // convert meters to kilometers
 
-            const response = await fetch(`/get_earthquakes?minMagnitude=${minMagnitude}&minDepth=${minDepth}&maxDepth=${maxDepth}&startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}&lat=${centerLat}&lon=${centerLon}&radius=${radius}`);
+            const source = document.getElementById('source').value;
+            const response = await fetch(`/get_earthquakes?source=${source}&minMagnitude=${minMagnitude}&minDepth=${minDepth}&maxDepth=${maxDepth}&startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}&lat=${centerLat}&lon=${centerLon}&radius=${radius}`);
             const data = await response.json();
             data.features.forEach(earthquake => {
                 addEarthquake(earthquake);
