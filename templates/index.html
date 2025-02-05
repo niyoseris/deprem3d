@@ -345,6 +345,18 @@
 
             const source = document.getElementById('source').value;
             try {
+                // Log all filter parameters
+                console.log('Filter parameters:', {
+                    source,
+                    minMagnitude,
+                    startDate: startDate.toISOString().split('T')[0],
+                    endDate: endDate.toISOString().split('T')[0],
+                    minDepth,
+                    maxDepth,
+                    centerLat,
+                    centerLon,
+                    radius
+                });
                 console.log('Fetching earthquakes...');
                 const response = await fetch(`/get_earthquakes?source=${source}&minMagnitude=${minMagnitude}&minDepth=${minDepth}&maxDepth=${maxDepth}&startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}&lat=${centerLat}&lon=${centerLon}&radius=${radius}`);
                 
