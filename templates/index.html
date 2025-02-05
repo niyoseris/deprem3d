@@ -99,6 +99,18 @@
 
 
     <center>
+    <div class="timeline-controls" style="position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.7); color: white; padding: 10px; border-radius: 5px; z-index: 1000; text-align: center;">
+        <input type="range" id="timelineSlider" min="0" max="100" value="0" style="width: 300px;">
+        <br>
+        <button id="playButton" style="margin: 5px;">Play</button>
+        <select id="playSpeed" style="margin: 5px;">
+            <option value="1">1x</option>
+            <option value="2">2x</option>
+            <option value="5">5x</option>
+            <option value="10">10x</option>
+        </select>
+        <span id="currentTime" style="margin-left: 10px;">Time: --</span>
+    </div>
     <div style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.7); color: white; padding: 10px; border-radius: 5px; z-index: 1000;">
         <a href="https://donate.stripe.com/fZe3eE69oboxggw003" target="_blank" style="color: white; text-decoration: none;">
             <button style="padding: 10px 20px; background-color: #007BFF; border: none; border-radius: 5px; color: white; font-weight: bold; cursor: pointer;">Tip Box ❤️</button>
@@ -166,6 +178,71 @@
             document.getElementById('currentCoordinates').innerText = `Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}`;
         }
 
+        let earthquakeData = [];
+        let isPlaying = false;
+        let currentIndex = 0;
+        let animationInterval;
+
+        function startAnimation() {
+            if (!earthquakeData.length) return;
+            
+            const speed = parseInt(document.getElementById('playSpeed').value);
+            clearInterval(animationInterval);
+            
+            animationInterval = setInterval(() => {
+                if (currentIndex >= earthquakeData.length) {
+                    stopAnimation();
+                    return;
+                }
+                
+                viewer.entities.removeAll();
+                for (let i = 0; i <= currentIndex; i++) {
+                    addEarthquake(earthquakeData[i]);
+                }
+                
+                const currentEarthquake = earthquakeData[currentIndex];
+                document.getElementById('currentTime').textContent = 
+                    `Time: ${new Date(currentEarthquake.properties.time).toLocaleString()}`;
+                
+                document.getElementById('timelineSlider').value = 
+                    (currentIndex / (earthquakeData.length - 1)) * 100;
+                
+                currentIndex++;
+            }, 1000 / speed);
+        }
+
+        function stopAnimation() {
+            clearInterval(animationInterval);
+            isPlaying = false;
+            document.getElementById('playButton').textContent = 'Play';
+        }
+
+        document.getElementById('playButton').addEventListener('click', function() {
+            isPlaying = !isPlaying;
+            this.textContent = isPlaying ? 'Pause' : 'Play';
+            
+            if (isPlaying) {
+                startAnimation();
+            } else {
+                stopAnimation();
+            }
+        });
+
+        document.getElementById('timelineSlider').addEventListener('input', function() {
+            if (earthquakeData.length === 0) return;
+            
+            const percentage = this.value / 100;
+            currentIndex = Math.floor(percentage * earthquakeData.length);
+            
+            viewer.entities.removeAll();
+            for (let i = 0; i <= currentIndex; i++) {
+                addEarthquake(earthquakeData[i]);
+            }
+            
+            document.getElementById('currentTime').textContent = 
+                `Time: ${new Date(earthquakeData[currentIndex].properties.time).toLocaleString()}`;
+        });
+
         async function fetchEarthquakes() {
             const minMagnitude = document.getElementById('minMagnitude').value;
             
@@ -223,9 +300,14 @@
             const source = document.getElementById('source').value;
             const response = await fetch(`/get_earthquakes?source=${source}&minMagnitude=${minMagnitude}&minDepth=${minDepth}&maxDepth=${maxDepth}&startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}&lat=${centerLat}&lon=${centerLon}&radius=${radius}`);
             const data = await response.json();
-            data.features.forEach(earthquake => {
-                addEarthquake(earthquake);
-            });
+            earthquakeData = data.features.sort((a, b) => 
+                new Date(a.properties.time) - new Date(b.properties.time)
+            );
+            currentIndex = 0;
+            stopAnimation();
+            viewer.entities.removeAll();
+            document.getElementById('timelineSlider').value = 0;
+            addEarthquake(earthquakeData[0]);
         }
 
         function addEarthquake(earthquake) {
