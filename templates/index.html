@@ -358,12 +358,14 @@
                 if (!data || !data.features) {
                     console.warn('No earthquake data available:', data?.metadata?.message || 'Unknown error');
                     earthquakeData = [];
+                    alert('No earthquake data available. Please try different filter criteria.');
                     return;
                 }
                 
                 if (data.features.length === 0) {
                     console.warn('No earthquakes found for the given criteria');
                     earthquakeData = [];
+                    alert('No earthquakes found for the given criteria. Try adjusting your filters (magnitude, date range, or location).');
                     return;
                 }
 
