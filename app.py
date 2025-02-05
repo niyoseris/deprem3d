@@ -26,7 +26,7 @@ def get_earthquakes():
         elif source == 'emsc':
             url = 'https://www.seismicportal.eu/fdsnws/event/1/query'
         elif source == 'kandilli':
-            url = 'http://www.koeri.boun.edu.tr/scripts/lst0.asp'
+            url = 'http://www.koeri.boun.edu.tr/scripts/lst9.asp'
         else:
             return jsonify({'error': 'Invalid data source'}), 400
         
@@ -164,8 +164,18 @@ def get_earthquakes():
             })
             
         elif source == 'kandilli':
-            response = requests.get(url)
-            response.raise_for_status()
+            try:
+                response = requests.get(url, timeout=10)
+                response.raise_for_status()
+            except Exception as e:
+                print(f'Kandilli error: {str(e)}')
+                return jsonify({
+                    "type": "FeatureCollection",
+                    "features": [],
+                    "metadata": {
+                        "message": "Error fetching data from Kandilli"
+                    }
+                })
             
             # Parse Kandilli's text format
             features = []
