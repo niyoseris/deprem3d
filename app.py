@@ -53,6 +53,11 @@ def get_earthquakes():
         # Check date range
         if start_date > end_date:
             return jsonify({'error': 'Start date must be before end date.'}), 400
+            
+        # Check if dates are in the future for EMSC
+        today = datetime.utcnow().strftime('%Y-%m-%d')
+        if source == 'emsc' and (start_date > today or end_date > today):
+            return jsonify({'error': 'EMSC API does not accept future dates'}), 400
         
         if source == 'usgs':
             params = {
