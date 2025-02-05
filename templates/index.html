@@ -344,12 +344,21 @@
             ) / 1000; // convert meters to kilometers
 
             const source = document.getElementById('source').value;
-            const response = await fetch(`/get_earthquakes?source=${source}&minMagnitude=${minMagnitude}&minDepth=${minDepth}&maxDepth=${maxDepth}&startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}&lat=${centerLat}&lon=${centerLon}&radius=${radius}`);
-            const data = await response.json();
-            if (!data.features) {
-                earthquakeData = [];
-                return;
-            }
+            try {
+                const response = await fetch(`/get_earthquakes?source=${source}&minMagnitude=${minMagnitude}&minDepth=${minDepth}&maxDepth=${maxDepth}&startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}&lat=${centerLat}&lon=${centerLon}&radius=${radius}`);
+                const data = await response.json();
+                
+                if (!data || !data.features) {
+                    console.warn('No earthquake data available:', data?.metadata?.message || 'Unknown error');
+                    earthquakeData = [];
+                    return;
+                }
+                
+                if (data.features.length === 0) {
+                    console.warn('No earthquakes found for the given criteria');
+                    earthquakeData = [];
+                    return;
+                }
             earthquakeData = data.features.sort((a, b) => 
                 new Date(a.properties.time) - new Date(b.properties.time)
             );

@@ -90,10 +90,20 @@ def get_earthquakes():
             return jsonify(response.json())
             
         elif source == 'emsc':
+            # EMSC doesn't accept future dates
+            if start_date > datetime.utcnow() or end_date > datetime.utcnow():
+                return jsonify({
+                    "type": "FeatureCollection",
+                    "features": [],
+                    "metadata": {
+                        "message": "EMSC API does not support future dates"
+                    }
+                })
+
             params = {
                 'format': 'json',
-                'start': start_date,
-                'end': end_date,
+                'start': start_date.strftime('%Y-%m-%d'),
+                'end': end_date.strftime('%Y-%m-%d'),
                 'minmag': min_magnitude,
                 'mindepth': min_depth,
                 'maxdepth': max_depth
@@ -103,9 +113,18 @@ def get_earthquakes():
                 params['lon'] = lon
                 params['maxradius'] = radius
             
-            response = requests.get(url, params=params)
-            response.raise_for_status()
-            data = response.json()
+            try:
+                response = requests.get(url, params=params)
+                response.raise_for_status()
+                data = response.json()
+            except:
+                return jsonify({
+                    "type": "FeatureCollection",
+                    "features": [],
+                    "metadata": {
+                        "message": "Error fetching data from EMSC"
+                    }
+                })
 
             if not data or (isinstance(data, dict) and not data.get('features')):
                 return jsonify({
