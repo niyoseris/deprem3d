@@ -296,18 +296,6 @@
             let startDate, endDate;
             const dateRange = document.getElementById('dateRange').value;
             const now = new Date();
-            
-            // Set default dates for custom date inputs
-            if (dateRange === 'custom') {
-                const startDateInput = document.getElementById('startDate');
-                const endDateInput = document.getElementById('endDate');
-                if (!startDateInput.value) {
-                    startDateInput.valueAsDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); // Last week
-                }
-                if (!endDateInput.value) {
-                    endDateInput.valueAsDate = now;
-                }
-            }
 
             if (dateRange === '24h') {
                 startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -356,52 +344,11 @@
             ) / 1000; // convert meters to kilometers
 
             const source = document.getElementById('source').value;
-            try {
-                // Log all filter parameters
-                console.log('Filter parameters:', {
-                    source,
-                    minMagnitude,
-                    startDate: startDate.toISOString().split('T')[0],
-                    endDate: endDate.toISOString().split('T')[0],
-                    minDepth,
-                    maxDepth,
-                    centerLat,
-                    centerLon,
-                    radius
-                });
-                console.log('Fetching earthquakes...');
-                const response = await fetch(`/get_earthquakes?source=${source}&minMagnitude=${minMagnitude}&minDepth=${minDepth}&maxDepth=${maxDepth}&startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}&lat=${centerLat}&lon=${centerLon}&radius=${radius}`);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                console.log('Received data:', data);
-                
-                if (!data || !data.features) {
-                    console.warn('No earthquake data available:', data?.metadata?.message || 'Unknown error');
-                    earthquakeData = [];
-                    alert('No earthquake data available. Please try different filter criteria.');
-                    return;
-                }
-                
-                if (data.features.length === 0) {
-                    console.warn('No earthquakes found for the given criteria');
-                    earthquakeData = [];
-                    alert('No earthquakes found for the given criteria. Try adjusting your filters (magnitude, date range, or location).');
-                    return;
-                }
-
-                earthquakeData = data.features.sort((a, b) => 
-                    new Date(a.properties.time) - new Date(b.properties.time)
-                );
-                console.log('Processed earthquakes:', earthquakeData.length);
-            } catch (error) {
-                console.error('Error fetching earthquake data:', error);
-                earthquakeData = [];
-                return;
-            }
+            const response = await fetch(`/get_earthquakes?source=${source}&minMagnitude=${minMagnitude}&minDepth=${minDepth}&maxDepth=${maxDepth}&startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}&lat=${centerLat}&lon=${centerLon}&radius=${radius}`);
+            const data = await response.json();
+            earthquakeData = data.features.sort((a, b) => 
+                new Date(a.properties.time) - new Date(b.properties.time)
+            );
             currentIndex = 0;
             stopAnimation();
             viewer.entities.removeAll();

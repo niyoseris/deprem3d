@@ -26,7 +26,7 @@ def get_earthquakes():
         elif source == 'emsc':
             url = 'https://www.seismicportal.eu/fdsnws/event/1/query'
         elif source == 'kandilli':
-            url = 'http://www.koeri.boun.edu.tr/scripts/lst9.asp'
+            url = 'http://www.koeri.boun.edu.tr/scripts/lst0.asp'
         else:
             return jsonify({'error': 'Invalid data source'}), 400
         
@@ -39,22 +39,18 @@ def get_earthquakes():
         
         # Standardize and validate dates
         try:
-            # Try all common formats
-            for date_format in ['%d/%m/%Y', '%Y-%m-%d']:
+            # Try both common formats (YYYY-MM-DD and MM/DD/YYYY)
+            for date_format in ['%Y-%m-%d', '%m/%d/%Y']:
                 try:
-                    start_date = datetime.strptime(start_date, date_format)
-                    end_date = datetime.strptime(end_date, date_format)
+                    start_date = datetime.strptime(start_date, date_format).strftime('%Y-%m-%d')
+                    end_date = datetime.strptime(end_date, date_format).strftime('%Y-%m-%d')
                     break
                 except ValueError:
                     continue
             else:
                 raise ValueError('Invalid date format')
-                
-            # Convert to ISO format for APIs
-            start_date_iso = start_date.strftime('%Y-%m-%d')
-            end_date_iso = end_date.strftime('%Y-%m-%d')
         except ValueError:
-            return jsonify({'error': 'Invalid date format. Use DD/MM/YYYY or YYYY-MM-DD'}), 400
+            return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD or MM/DD/YYYY'}), 400
             
         min_depth = request.args.get('minDepth', default=0, type=float)
         max_depth = request.args.get('maxDepth', default=700, type=float)
@@ -67,15 +63,15 @@ def get_earthquakes():
             return jsonify({'error': 'Start date must be before end date.'}), 400
             
         # Check if dates are in the future for EMSC
-        today = datetime.utcnow()
+        today = datetime.utcnow().strftime('%Y-%m-%d')
         if source == 'emsc' and (start_date > today or end_date > today):
             return jsonify({'error': 'EMSC API does not accept future dates'}), 400
         
         if source == 'usgs':
             params = {
                 'format': 'geojson',
-                'starttime': start_date_iso,
-                'endtime': end_date_iso,
+                'starttime': start_date,
+                'endtime': end_date,
                 'minmagnitude': min_magnitude,
                 'mindepth': min_depth,
                 'maxdepth': max_depth
@@ -90,20 +86,10 @@ def get_earthquakes():
             return jsonify(response.json())
             
         elif source == 'emsc':
-            # EMSC doesn't accept future dates
-            if start_date > datetime.utcnow() or end_date > datetime.utcnow():
-                return jsonify({
-                    "type": "FeatureCollection",
-                    "features": [],
-                    "metadata": {
-                        "message": "EMSC API does not support future dates"
-                    }
-                })
-
             params = {
                 'format': 'json',
-                'start': start_date.strftime('%Y-%m-%d'),
-                'end': end_date.strftime('%Y-%m-%d'),
+                'start': start_date,
+                'end': end_date,
                 'minmag': min_magnitude,
                 'mindepth': min_depth,
                 'maxdepth': max_depth
@@ -113,50 +99,25 @@ def get_earthquakes():
                 params['lon'] = lon
                 params['maxradius'] = radius
             
-            try:
-                response = requests.get(url, params=params)
-                response.raise_for_status()
-                data = response.json()
-            except:
-                return jsonify({
-                    "type": "FeatureCollection",
-                    "features": [],
-                    "metadata": {
-                        "message": "Error fetching data from EMSC"
-                    }
-                })
-
-            if not data or (isinstance(data, dict) and not data.get('features')):
-                return jsonify({
-                    "type": "FeatureCollection",
-                    "features": []
-                })
+            response = requests.get(url, params=params)
+            response.raise_for_status()
+            data = response.json()
             
             # Convert EMSC format to GeoJSON
             features = []
-            if isinstance(data, dict) and 'features' in data:
-                return data  # Already in GeoJSON format
-            
             for eq in data:
-                try:
-                    features.append({
-                        "type": "Feature",
-                        "geometry": {
-                            "type": "Point",
-                            "coordinates": [
-                                float(eq.get('longitude', 0)),
-                                float(eq.get('latitude', 0)),
-                                float(eq.get('depth', 0))
-                            ]
-                        },
-                        "properties": {
-                            "mag": float(eq.get('magnitude', 0)),
-                            "place": eq.get('flynn_region', 'Unknown'),
-                            "time": eq.get('time', '').replace('Z', '+00:00')
-                        }
-                    })
-                except (KeyError, ValueError, TypeError):
-                    continue
+                features.append({
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [eq['longitude'], eq['latitude'], eq['depth']]
+                    },
+                    "properties": {
+                        "mag": eq['magnitude'],
+                        "place": eq['flynn_region'],
+                        "time": eq['time'].replace('Z', '+00:00')
+                    }
+                })
             
             return jsonify({
                 "type": "FeatureCollection",
@@ -164,18 +125,8 @@ def get_earthquakes():
             })
             
         elif source == 'kandilli':
-            try:
-                response = requests.get(url, timeout=10)
-                response.raise_for_status()
-            except Exception as e:
-                print(f'Kandilli error: {str(e)}')
-                return jsonify({
-                    "type": "FeatureCollection",
-                    "features": [],
-                    "metadata": {
-                        "message": "Error fetching data from Kandilli"
-                    }
-                })
+            response = requests.get(url)
+            response.raise_for_status()
             
             # Parse Kandilli's text format
             features = []
@@ -206,7 +157,7 @@ def get_earthquakes():
                             "properties": {
                                 "mag": mag,
                                 "place": location,
-                                "time": datetime.strptime(f"{date} {time}", "%Y.%m.%d %H.%M.%S").strftime("%Y-%m-%dT%H:%M:%S+03:00")
+                                "time": f"2023-{date}T{time}+03:00"
                             }
                         })
                 except:
