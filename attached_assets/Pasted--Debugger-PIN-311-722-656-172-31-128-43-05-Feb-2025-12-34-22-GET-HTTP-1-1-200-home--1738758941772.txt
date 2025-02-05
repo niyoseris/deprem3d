@@ -1,0 +1,15 @@
+
+ * Debugger PIN: 311-722-656
+172.31.128.43 - - [05/Feb/2025 12:34:22] "GET / HTTP/1.1" 200 -
+/home/runner/workspace/app.py:34: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  default_start = (datetime.utcnow() - timedelta(days=30)).strftime('%Y-%m-%d')
+/home/runner/workspace/app.py:35: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  default_end = datetime.utcnow().strftime('%Y-%m-%d')
+/home/runner/workspace/app.py:70: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  today = datetime.utcnow()
+172.31.128.43 - - [05/Feb/2025 12:34:26] "GET /get_earthquakes?source=usgs&minMagnitude=1.0&minDepth=0&maxDepth=700&startDate=2025-02-04&endDate=2025-02-05&lat=0&lon=0&radius=9004.93928771485 HTTP/1.1" 200 -
+Error: 400 Client Error: Bad Request for url: https://www.seismicportal.eu/fdsnws/event/1/query?format=json&start=2025-02-04+00%3A00%3A00&end=2025-02-05+00%3A00%3A00&minmag=1.0&mindepth=0.0&maxdepth=700.0&lat=0.0&lon=0.0&maxradius=9004.93928771485
+172.31.128.43 - - [05/Feb/2025 12:34:49] "GET /get_earthquakes?source=emsc&minMagnitude=1.0&minDepth=0&maxDepth=700&startDate=2025-02-04&endDate=2025-02-05&lat=0&lon=0&radius=9004.93928771485 HTTP/1.1" 500 -
+Error: 400 Client Error: Bad Request for url: https://www.seismicportal.eu/fdsnws/event/1/query?format=json&start=2025-02-04+00%3A00%3A00&end=2025-02-05+00%3A00%3A00&minmag=1.0&mindepth=0.0&maxdepth=700.0&lat=24.482455705288828&lon=27.6930223394733&maxradius=6523.652016239917
+172.31.128.43 - - [05/Feb/2025 12:34:58] "GET /get_earthquakes?source=emsc&minMagnitude=1.0&minDepth=0&maxDepth=700&startDate=2025-02-04&endDate=2025-02-05&lat=24.482455705288828&lon=27.6930223394733&radius=6523.652016239917 HTTP/1.1" 500 -
+172.31.128.43 - - [05/Feb/2025 12:35:06] "GET /get_earthquakes?source=kandilli&minMagnitude=1.0&minDepth=0&maxDepth=700&startDate=2025-02-04&endDate=2025-02-05&lat=24.482455705288828&lon=27.6930223394733&radius=6523.652016239917 HTTP/1.1" 200 -
