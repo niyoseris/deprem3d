@@ -359,9 +359,15 @@
                     earthquakeData = [];
                     return;
                 }
-            earthquakeData = data.features.sort((a, b) => 
-                new Date(a.properties.time) - new Date(b.properties.time)
-            );
+
+                earthquakeData = data.features.sort((a, b) => 
+                    new Date(a.properties.time) - new Date(b.properties.time)
+                );
+            } catch (error) {
+                console.error('Error fetching earthquake data:', error);
+                earthquakeData = [];
+                return;
+            }
             currentIndex = 0;
             stopAnimation();
             viewer.entities.removeAll();
