@@ -45,15 +45,11 @@
 </head>
 <body>
     <div id="cesiumContainer"></div>
-    <div class="coordinates">
-        <h4>View Boundaries</h4>
-        <p id="currentCoordinates">North: 0°, South: 0°<br>East: 0°, West: 0°</p>
-    </div>
-    <div class="filter-form">
-        <h4>Filter</h4>
-        <form id="filterForm">
-            <label for="source">Data Source:</label>
-            <select id="source" name="source">
+    <div class="control-panel" style="position: absolute; top: 10px; right: 10px; background: rgba(0, 0, 0, 0.7); color: white; padding: 15px; border-radius: 5px; z-index: 999; max-height: 80vh; overflow-y: auto; width: 300px;">
+        <h4 style="margin-top: 0; color: white;">Earthquake Filter</h4>
+        <form id="filterForm" style="display: flex; flex-direction: column; gap: 10px;">
+            <label for="source" style="display: block; margin-bottom: 5px;">Data Source:</label>
+            <select id="source" name="source" style="width: 100%; padding: 5px; border-radius: 3px;">
                 <option value="usgs">USGS (Worldwide)</option>
                 <option value="emsc">EMSC (European-Mediterranean)</option>
                 <option value="kandilli">Kandilli Observatory (Turkey)</option>
@@ -98,12 +94,17 @@
     </div>
 
 
-    <center>
-    <div class="view-controls" style="position: fixed; bottom: 140px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.7); color: white; padding: 10px; border-radius: 5px; z-index: 1000; text-align: center;">
+    <div class="coordinates" style="position: absolute; bottom: 100px; left: 10px; background: rgba(0, 0, 0, 0.7); color: white; padding: 10px; border-radius: 5px; z-index: 999;">
+        <h4 style="margin: 0; margin-bottom: 5px;">View Boundaries</h4>
+        <p id="currentCoordinates" style="margin: 0;">North: 0°, South: 0°<br>East: 0°, West: 0°</p>
+    </div>
+
+    <div class="bottom-controls" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 1000;">
+        <div class="view-controls" style="background: rgba(0, 0, 0, 0.7); color: white; padding: 10px; border-radius: 5px; text-align: center;">
         <button onclick="setViewMode('all')" id="showAllBtn" style="margin: 5px; background-color: #007BFF; border: none; border-radius: 5px; color: white; padding: 5px 10px;">Show All</button>
         <button onclick="setViewMode('timeline')" id="showTimelineBtn" style="margin: 5px; background-color: #6c757d; border: none; border-radius: 5px; color: white; padding: 5px 10px;">Timeline</button>
     </div>
-    <div class="timeline-controls" style="position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.7); color: white; padding: 10px; border-radius: 5px; z-index: 1000; text-align: center;">
+    <div class="timeline-controls" style="background: rgba(0, 0, 0, 0.7); color: white; padding: 10px; border-radius: 5px; text-align: center;">
         <input type="range" id="timelineSlider" min="0" max="100" value="0" style="width: 300px;">
         <br>
         <button id="playButton" style="margin: 5px;">Play</button>
@@ -115,7 +116,7 @@
         </select>
         <span id="currentTime" style="margin-left: 10px;">Time: --</span>
     </div>
-    <div style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.7); color: white; padding: 10px; border-radius: 5px; z-index: 1000;">
+    <div style="background: rgba(0, 0, 0, 0.7); color: white; padding: 10px; border-radius: 5px;">
         <a href="https://donate.stripe.com/fZe3eE69oboxggw003" target="_blank" style="color: white; text-decoration: none;">
             <button style="padding: 10px 20px; background-color: #007BFF; border: none; border-radius: 5px; color: white; font-weight: bold; cursor: pointer;">Tip Box ❤️</button>
         </a>
