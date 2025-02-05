@@ -45,8 +45,12 @@
 </head>
 <body>
     <div id="cesiumContainer"></div>
-    <div class="control-panel" style="position: absolute; top: 10px; right: 10px; background: rgba(0, 0, 0, 0.7); color: white; padding: 15px; border-radius: 5px; z-index: 999; max-height: 80vh; overflow-y: auto; width: 300px;">
-        <h4 style="margin-top: 0; color: white;">Earthquake Filter</h4>
+    <div class="control-panel" style="position: absolute; top: 10px; right: 10px; background: rgba(0, 0, 0, 0.7); color: white; padding: 15px; border-radius: 5px; z-index: 999; max-height: 80vh; width: 300px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleFilter()">
+            <h4 style="margin: 0; color: white;">Earthquake Filter</h4>
+            <span id="filterToggle">▼</span>
+        </div>
+        <div id="filterContent" style="overflow-y: auto; margin-top: 10px;">
         <form id="filterForm" style="display: flex; flex-direction: column; gap: 10px;">
             <label for="source" style="display: block; margin-bottom: 5px;">Data Source:</label>
             <select id="source" name="source" style="width: 100%; padding: 5px; border-radius: 3px;">
@@ -91,12 +95,12 @@
             <input type="checkbox" id="toggleLabels" checked>
             Show Earthquake Information
         </label>
-    </div>
-
-
-    <div class="coordinates" style="position: absolute; bottom: 100px; left: 10px; background: rgba(0, 0, 0, 0.7); color: white; padding: 10px; border-radius: 5px; z-index: 999;">
-        <h4 style="margin: 0; margin-bottom: 5px;">View Boundaries</h4>
-        <p id="currentCoordinates" style="margin: 0;">North: 0°, South: 0°<br>East: 0°, West: 0°</p>
+        <br><br>
+        <div style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 10px;">
+            <h4 style="margin: 0; margin-bottom: 5px;">View Boundaries</h4>
+            <p id="currentCoordinates" style="margin: 0;">North: 0°, South: 0°<br>East: 0°, West: 0°</p>
+        </div>
+        </div>
     </div>
 
     <div class="bottom-controls" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 1000;">
@@ -125,6 +129,17 @@
     </center>
     
     <script>
+        function toggleFilter() {
+            const content = document.getElementById('filterContent');
+            const toggle = document.getElementById('filterToggle');
+            if(content.style.display === 'none') {
+                content.style.display = 'block';
+                toggle.textContent = '▼';
+            } else {
+                content.style.display = 'none';
+                toggle.textContent = '▶';
+            }
+        }
         // Cesium ion access token
         Cesium.Ion.defaultAccessToken = '{{ cesium_token }}';
 
