@@ -157,7 +157,7 @@ def get_earthquakes():
                             "properties": {
                                 "mag": mag,
                                 "place": location,
-                                "time": f"2023-{date}T{time}+03:00"
+                                "time": f"{date}T{time}+03:00"
                             }
                         })
                 except:
