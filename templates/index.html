@@ -346,6 +346,10 @@
             const source = document.getElementById('source').value;
             const response = await fetch(`/get_earthquakes?source=${source}&minMagnitude=${minMagnitude}&minDepth=${minDepth}&maxDepth=${maxDepth}&startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}&lat=${centerLat}&lon=${centerLon}&radius=${radius}`);
             const data = await response.json();
+            if (!data.features) {
+                earthquakeData = [];
+                return;
+            }
             earthquakeData = data.features.sort((a, b) => 
                 new Date(a.properties.time) - new Date(b.properties.time)
             );

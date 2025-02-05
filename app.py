@@ -106,6 +106,12 @@ def get_earthquakes():
             response = requests.get(url, params=params)
             response.raise_for_status()
             data = response.json()
+
+            if not data or (isinstance(data, dict) and not data.get('features')):
+                return jsonify({
+                    "type": "FeatureCollection",
+                    "features": []
+                })
             
             # Convert EMSC format to GeoJSON
             features = []
