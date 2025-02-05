@@ -127,7 +127,7 @@
     </div>
 
     </center>
-    
+
     <script>
         function toggleFilter() {
             const content = document.getElementById('filterContent');
@@ -148,7 +148,7 @@
 
         async function initCesium() {
             const terrainProvider = await Cesium.createWorldTerrainAsync();
-            
+
             // Initialize the Cesium Viewer
             viewer = new Cesium.Viewer('cesiumContainer', {
                 terrainProvider: terrainProvider,
@@ -208,28 +208,28 @@
 
         function startAnimation() {
             if (!earthquakeData.length) return;
-            
+
             const speed = parseInt(document.getElementById('playSpeed').value);
             clearInterval(animationInterval);
-            
+
             animationInterval = setInterval(() => {
                 if (currentIndex >= earthquakeData.length) {
                     stopAnimation();
                     return;
                 }
-                
+
                 viewer.entities.removeAll();
                 for (let i = 0; i <= currentIndex; i++) {
                     addEarthquake(earthquakeData[i]);
                 }
-                
+
                 const currentEarthquake = earthquakeData[currentIndex];
                 document.getElementById('currentTime').textContent = 
                     `Time: ${new Date(currentEarthquake.properties.time).toLocaleString()}`;
-                
+
                 document.getElementById('timelineSlider').value = 
                     (currentIndex / (earthquakeData.length - 1)) * 100;
-                
+
                 currentIndex++;
             }, 1000 / speed);
         }
@@ -243,7 +243,7 @@
         document.getElementById('playButton').addEventListener('click', function() {
             isPlaying = !isPlaying;
             this.textContent = isPlaying ? 'Pause' : 'Play';
-            
+
             if (isPlaying) {
                 startAnimation();
             } else {
@@ -253,15 +253,15 @@
 
         document.getElementById('timelineSlider').addEventListener('input', function() {
             if (earthquakeData.length === 0) return;
-            
+
             const percentage = this.value / 100;
             currentIndex = Math.floor(percentage * earthquakeData.length);
-            
+
             viewer.entities.removeAll();
             for (let i = 0; i <= currentIndex; i++) {
                 addEarthquake(earthquakeData[i]);
             }
-            
+
             document.getElementById('currentTime').textContent = 
                 `Time: ${new Date(earthquakeData[currentIndex].properties.time).toLocaleString()}`;
         });
@@ -272,10 +272,10 @@
             viewMode = mode;
             document.getElementById('showAllBtn').style.backgroundColor = mode === 'all' ? '#007BFF' : '#6c757d';
             document.getElementById('showTimelineBtn').style.backgroundColor = mode === 'timeline' ? '#007BFF' : '#6c757d';
-            
+
             // Show/hide timeline controls
             document.querySelector('.timeline-controls').style.display = mode === 'timeline' ? 'block' : 'none';
-            
+
             // Update visualization
             viewer.entities.removeAll();
             if (mode === 'all') {
@@ -291,7 +291,7 @@
 
         async function fetchEarthquakes() {
             const minMagnitude = document.getElementById('minMagnitude').value;
-            
+
             // Date range check
             let startDate, endDate;
             const dateRange = document.getElementById('dateRange').value;
@@ -330,7 +330,7 @@
             // Calculate the center point
             const centerLon = (west + east) / 2;
             const centerLat = (south + north) / 2;
-            
+
             // Calculate the radius (distance to the farthest corner)
             const radius = Math.max(
                 Cesium.Cartesian3.distance(
@@ -353,7 +353,7 @@
             stopAnimation();
             viewer.entities.removeAll();
             document.getElementById('timelineSlider').value = 0;
-            
+
             if (viewMode === 'all') {
                 earthquakeData.forEach(earthquake => addEarthquake(earthquake));
             } else {
@@ -362,10 +362,11 @@
         }
 
         function addEarthquake(earthquake) {
+            console.log("Raw earthquake data:", JSON.stringify(earthquake, null, 2));
             const lon = earthquake.geometry.coordinates[0];
             const lat = earthquake.geometry.coordinates[1];
             const depth = earthquake.geometry.coordinates[2];
-            
+
             // Earthquake center point (underground)
             const position = Cesium.Cartesian3.fromDegrees(
                 lon,
