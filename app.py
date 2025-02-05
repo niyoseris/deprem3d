@@ -37,12 +37,20 @@ def get_earthquakes():
         start_date = request.args.get('startDate', default=default_start)
         end_date = request.args.get('endDate', default=default_end)
         
-        # Validate dates
+        # Standardize and validate dates
         try:
-            datetime.strptime(start_date, '%Y-%m-%d')
-            datetime.strptime(end_date, '%Y-%m-%d')
+            # Try both common formats (YYYY-MM-DD and MM/DD/YYYY)
+            for date_format in ['%Y-%m-%d', '%m/%d/%Y']:
+                try:
+                    start_date = datetime.strptime(start_date, date_format).strftime('%Y-%m-%d')
+                    end_date = datetime.strptime(end_date, date_format).strftime('%Y-%m-%d')
+                    break
+                except ValueError:
+                    continue
+            else:
+                raise ValueError('Invalid date format')
         except ValueError:
-            return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
+            return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD or MM/DD/YYYY'}), 400
             
         min_depth = request.args.get('minDepth', default=0, type=float)
         max_depth = request.args.get('maxDepth', default=700, type=float)
