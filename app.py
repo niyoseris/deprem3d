@@ -54,28 +54,106 @@ def get_earthquakes():
         if start_date > end_date:
             return jsonify({'error': 'Start date must be before end date.'}), 400
         
-        # Get earthquakes from the USGS API
-        url = 'https://earthquake.usgs.gov/fdsnws/event/1/query'
-        params = {
-            'format': 'geojson',
-            'starttime': start_date,
-            'endtime': end_date,
-            'minmagnitude': min_magnitude,
-            'mindepth': min_depth,
-            'maxdepth': max_depth
-        }
-
-        # Add coordinate parameters if they exist
-        if lat is not None and lon is not None and radius is not None:
-            params['latitude'] = lat
-            params['longitude'] = lon
-            params['maxradiuskm'] = radius  # Use km directly
-        
-        print(f'Requesting URL: {url} with params: {params}')  # Print the URL for debugging
-        
-        response = requests.get(url, params=params)
-        response.raise_for_status()
-        return jsonify(response.json())
+        if source == 'usgs':
+            params = {
+                'format': 'geojson',
+                'starttime': start_date,
+                'endtime': end_date,
+                'minmagnitude': min_magnitude,
+                'mindepth': min_depth,
+                'maxdepth': max_depth
+            }
+            if lat is not None and lon is not None and radius is not None:
+                params['latitude'] = lat
+                params['longitude'] = lon
+                params['maxradiuskm'] = radius
+            
+            response = requests.get(url, params=params)
+            response.raise_for_status()
+            return jsonify(response.json())
+            
+        elif source == 'emsc':
+            params = {
+                'format': 'json',
+                'start': start_date,
+                'end': end_date,
+                'minmag': min_magnitude,
+                'mindepth': min_depth,
+                'maxdepth': max_depth
+            }
+            if lat is not None and lon is not None and radius is not None:
+                params['lat'] = lat
+                params['lon'] = lon
+                params['maxradius'] = radius
+            
+            response = requests.get(url, params=params)
+            response.raise_for_status()
+            data = response.json()
+            
+            # Convert EMSC format to GeoJSON
+            features = []
+            for eq in data:
+                features.append({
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [eq['longitude'], eq['latitude'], eq['depth']]
+                    },
+                    "properties": {
+                        "mag": eq['magnitude'],
+                        "place": eq['flynn_region'],
+                        "time": eq['time'].replace('Z', '+00:00')
+                    }
+                })
+            
+            return jsonify({
+                "type": "FeatureCollection",
+                "features": features
+            })
+            
+        elif source == 'kandilli':
+            response = requests.get(url)
+            response.raise_for_status()
+            
+            # Parse Kandilli's text format
+            features = []
+            lines = response.text.split('\n')[7:-2]  # Skip header and footer
+            
+            for line in lines:
+                try:
+                    parts = line.strip().split()
+                    date = parts[0]
+                    time = parts[1]
+                    lat = float(parts[2])
+                    lon = float(parts[3])
+                    depth = float(parts[4])
+                    mag = float(parts[6])
+                    location = ' '.join(parts[8:])
+                    
+                    # Filter based on parameters
+                    if (mag >= min_magnitude and 
+                        depth >= min_depth and 
+                        depth <= max_depth):
+                        
+                        features.append({
+                            "type": "Feature",
+                            "geometry": {
+                                "type": "Point",
+                                "coordinates": [lon, lat, depth]
+                            },
+                            "properties": {
+                                "mag": mag,
+                                "place": location,
+                                "time": f"2023-{date}T{time}+03:00"
+                            }
+                        })
+                except:
+                    continue
+            
+            return jsonify({
+                "type": "FeatureCollection",
+                "features": features
+            })
     except Exception as e:
         print(f'Error: {str(e)}')  # Print the error message
         return jsonify({'error': str(e)}), 500
