@@ -39,18 +39,22 @@ def get_earthquakes():
         
         # Standardize and validate dates
         try:
-            # Try both common formats (YYYY-MM-DD and MM/DD/YYYY)
-            for date_format in ['%Y-%m-%d', '%m/%d/%Y']:
+            # Try all common formats
+            for date_format in ['%d/%m/%Y', '%Y-%m-%d']:
                 try:
-                    start_date = datetime.strptime(start_date, date_format).strftime('%Y-%m-%d')
-                    end_date = datetime.strptime(end_date, date_format).strftime('%Y-%m-%d')
+                    start_date = datetime.strptime(start_date, date_format)
+                    end_date = datetime.strptime(end_date, date_format)
                     break
                 except ValueError:
                     continue
             else:
                 raise ValueError('Invalid date format')
+                
+            # Convert to ISO format for APIs
+            start_date_iso = start_date.strftime('%Y-%m-%d')
+            end_date_iso = end_date.strftime('%Y-%m-%d')
         except ValueError:
-            return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD or MM/DD/YYYY'}), 400
+            return jsonify({'error': 'Invalid date format. Use DD/MM/YYYY or YYYY-MM-DD'}), 400
             
         min_depth = request.args.get('minDepth', default=0, type=float)
         max_depth = request.args.get('maxDepth', default=700, type=float)
@@ -63,15 +67,15 @@ def get_earthquakes():
             return jsonify({'error': 'Start date must be before end date.'}), 400
             
         # Check if dates are in the future for EMSC
-        today = datetime.utcnow().strftime('%Y-%m-%d')
+        today = datetime.utcnow()
         if source == 'emsc' and (start_date > today or end_date > today):
             return jsonify({'error': 'EMSC API does not accept future dates'}), 400
         
         if source == 'usgs':
             params = {
                 'format': 'geojson',
-                'starttime': start_date,
-                'endtime': end_date,
+                'starttime': start_date_iso,
+                'endtime': end_date_iso,
                 'minmagnitude': min_magnitude,
                 'mindepth': min_depth,
                 'maxdepth': max_depth
@@ -157,7 +161,7 @@ def get_earthquakes():
                             "properties": {
                                 "mag": mag,
                                 "place": location,
-                                "time": f"2023-{date}T{time}+03:00"
+                                "time": datetime.strptime(f"{date} {time}", "%Y.%m.%d %H.%M.%S").strftime("%Y-%m-%dT%H:%M:%S+03:00")
                             }
                         })
                 except:
