@@ -99,6 +99,10 @@
 
 
     <center>
+    <div class="view-controls" style="position: fixed; bottom: 140px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.7); color: white; padding: 10px; border-radius: 5px; z-index: 1000; text-align: center;">
+        <button onclick="setViewMode('all')" id="showAllBtn" style="margin: 5px; background-color: #007BFF; border: none; border-radius: 5px; color: white; padding: 5px 10px;">Show All</button>
+        <button onclick="setViewMode('timeline')" id="showTimelineBtn" style="margin: 5px; background-color: #6c757d; border: none; border-radius: 5px; color: white; padding: 5px 10px;">Timeline</button>
+    </div>
     <div class="timeline-controls" style="position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.7); color: white; padding: 10px; border-radius: 5px; z-index: 1000; text-align: center;">
         <input type="range" id="timelineSlider" min="0" max="100" value="0" style="width: 300px;">
         <br>
@@ -246,6 +250,29 @@
                 `Time: ${new Date(earthquakeData[currentIndex].properties.time).toLocaleString()}`;
         });
 
+        let viewMode = 'timeline'; // Default view mode
+
+        function setViewMode(mode) {
+            viewMode = mode;
+            document.getElementById('showAllBtn').style.backgroundColor = mode === 'all' ? '#007BFF' : '#6c757d';
+            document.getElementById('showTimelineBtn').style.backgroundColor = mode === 'timeline' ? '#007BFF' : '#6c757d';
+            
+            // Show/hide timeline controls
+            document.querySelector('.timeline-controls').style.display = mode === 'timeline' ? 'block' : 'none';
+            
+            // Update visualization
+            viewer.entities.removeAll();
+            if (mode === 'all') {
+                earthquakeData.forEach(earthquake => addEarthquake(earthquake));
+            } else {
+                if (earthquakeData.length > 0) {
+                    for (let i = 0; i <= currentIndex; i++) {
+                        addEarthquake(earthquakeData[i]);
+                    }
+                }
+            }
+        }
+
         async function fetchEarthquakes() {
             const minMagnitude = document.getElementById('minMagnitude').value;
             
@@ -310,7 +337,12 @@
             stopAnimation();
             viewer.entities.removeAll();
             document.getElementById('timelineSlider').value = 0;
-            addEarthquake(earthquakeData[0]);
+            
+            if (viewMode === 'all') {
+                earthquakeData.forEach(earthquake => addEarthquake(earthquake));
+            } else {
+                addEarthquake(earthquakeData[0]);
+            }
         }
 
         function addEarthquake(earthquake) {
