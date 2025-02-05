@@ -345,8 +345,15 @@
 
             const source = document.getElementById('source').value;
             try {
+                console.log('Fetching earthquakes...');
                 const response = await fetch(`/get_earthquakes?source=${source}&minMagnitude=${minMagnitude}&minDepth=${minDepth}&maxDepth=${maxDepth}&startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}&lat=${centerLat}&lon=${centerLon}&radius=${radius}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
+                console.log('Received data:', data);
                 
                 if (!data || !data.features) {
                     console.warn('No earthquake data available:', data?.metadata?.message || 'Unknown error');
@@ -363,6 +370,7 @@
                 earthquakeData = data.features.sort((a, b) => 
                     new Date(a.properties.time) - new Date(b.properties.time)
                 );
+                console.log('Processed earthquakes:', earthquakeData.length);
             } catch (error) {
                 console.error('Error fetching earthquake data:', error);
                 earthquakeData = [];
