@@ -103,7 +103,7 @@ def get_earthquakes():
             response = requests.get(url, params=params)
             response.raise_for_status()
             data = response.json()
-            print("EMSC Response:", data)  # Debug log
+            #print("EMSC Response:", data)  # Debug log
 
             # Convert EMSC format to GeoJSON
             features = []
