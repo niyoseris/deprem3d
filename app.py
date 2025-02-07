@@ -97,7 +97,8 @@ def get_earthquakes():
             if lat is not None and lon is not None and radius is not None:
                 params['lat'] = lat
                 params['lon'] = lon
-                params['maxradius'] = radius
+                # Convert radius from km to degrees (approximately 111 km per degree)
+                params['maxradius'] = radius / 111.0
 
             response = requests.get(url, params=params)
             response.raise_for_status()
