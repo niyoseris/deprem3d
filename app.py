@@ -19,7 +19,7 @@ def get_earthquakes():
         # Get parameters from the user
         source = request.args.get('source', default='usgs', type=str)
         min_magnitude = request.args.get('minMagnitude', default=1.0, type=float)
-        
+
         # Choose data source
         if source == 'usgs':
             url = 'https://earthquake.usgs.gov/fdsnws/event/1/query'
@@ -29,14 +29,14 @@ def get_earthquakes():
             url = 'http://www.koeri.boun.edu.tr/scripts/lst0.asp'
         else:
             return jsonify({'error': 'Invalid data source'}), 400
-        
+
         # Default date range: last 1 month
         default_start = (datetime.utcnow() - timedelta(days=30)).strftime('%Y-%m-%d')
         default_end = datetime.utcnow().strftime('%Y-%m-%d')
-        
+
         start_date = request.args.get('startDate', default=default_start)
         end_date = request.args.get('endDate', default=default_end)
-        
+
         # Standardize and validate dates
         try:
             # Try both common formats (YYYY-MM-DD and MM/DD/YYYY)
@@ -51,7 +51,7 @@ def get_earthquakes():
                 raise ValueError('Invalid date format')
         except ValueError:
             return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD or MM/DD/YYYY'}), 400
-            
+
         min_depth = request.args.get('minDepth', default=0, type=float)
         max_depth = request.args.get('maxDepth', default=700, type=float)
         lat = request.args.get('lat', type=float)
@@ -61,12 +61,12 @@ def get_earthquakes():
         # Check date range
         if start_date > end_date:
             return jsonify({'error': 'Start date must be before end date.'}), 400
-            
+
         # Check if dates are in the future for EMSC
         today = datetime.utcnow().strftime('%Y-%m-%d')
         if source == 'emsc' and (start_date > today or end_date > today):
             return jsonify({'error': 'EMSC API does not accept future dates'}), 400
-        
+
         if source == 'usgs':
             params = {
                 'format': 'geojson',
@@ -80,11 +80,11 @@ def get_earthquakes():
                 params['latitude'] = lat
                 params['longitude'] = lon
                 params['maxradiuskm'] = radius
-            
+
             response = requests.get(url, params=params)
             response.raise_for_status()
             return jsonify(response.json())
-            
+
         elif source == 'emsc':
             params = {
                 'format': 'json',
@@ -98,11 +98,11 @@ def get_earthquakes():
                 params['lat'] = lat
                 params['lon'] = lon
                 params['maxradius'] = radius
-            
+
             response = requests.get(url, params=params)
             response.raise_for_status()
             data = response.json()
-            
+
             # Convert EMSC format to GeoJSON
             features = []
             for eq in data:
@@ -118,20 +118,20 @@ def get_earthquakes():
                         "time": eq['time'].replace('Z', '+00:00')
                     }
                 })
-            
+
             return jsonify({
                 "type": "FeatureCollection",
                 "features": features
             })
-            
+
         elif source == 'kandilli':
             response = requests.get(url)
             response.raise_for_status()
-            
+
             # Parse Kandilli's text format
             features = []
             lines = response.text.split('\n')[7:-2]  # Skip header and footer
-            
+
             for line in lines:
                 try:
                     parts = line.strip().split()
@@ -142,12 +142,12 @@ def get_earthquakes():
                     depth = float(parts[4])
                     mag = float(parts[6])
                     location = ' '.join(parts[8:])
-                    
+
                     # Filter based on parameters
                     if (mag >= min_magnitude and 
                         depth >= min_depth and 
                         depth <= max_depth):
-                        
+
                         features.append({
                             "type": "Feature",
                             "geometry": {
@@ -162,7 +162,7 @@ def get_earthquakes():
                         })
                 except:
                     continue
-            
+
             return jsonify({
                 "type": "FeatureCollection",
                 "features": features
