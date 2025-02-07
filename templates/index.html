@@ -347,11 +347,15 @@
             const response = await fetch(`/get_earthquakes?source=${source}&minMagnitude=${minMagnitude}&minDepth=${minDepth}&maxDepth=${maxDepth}&startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}&lat=${centerLat}&lon=${centerLon}&radius=${radius}`);
             const data = await response.json();
             earthquakeData = data.features;
+            console.log("Data received:", JSON.stringify(data, null, 2));
             if (data.features && data.features.length > 0) {
+                console.log("Sorting earthquakes...");
                 earthquakeData = data.features.sort((a, b) => {
                     let timeA = a.properties.time;
                     let timeB = b.properties.time;
-                    
+                    console.log("Time A:", timeA);
+                    console.log("Time B:", timeB);
+
                     // USGS için timestamp'i tarihe çevir
                     if (typeof timeA === 'number') {
                         timeA = new Date(timeA).toISOString();
@@ -359,13 +363,13 @@
                     if (typeof timeB === 'number') {
                         timeB = new Date(timeB).toISOString();
                     }
-                    
+
                     // EMSC için nokta sonrasını kaldır
                     if (source === 'emsc') {
                         timeA = timeA.split('.')[0];
                         timeB = timeB.split('.')[0];
                     }
-                    
+
                     return new Date(timeA) - new Date(timeB);
                 });
             }
