@@ -349,8 +349,23 @@
             earthquakeData = data.features;
             if (data.features && data.features.length > 0) {
                 earthquakeData = data.features.sort((a, b) => {
-                    const timeA = source === 'emsc' ? a.properties.time.split('.')[0] : a.properties.time;
-                    const timeB = source === 'emsc' ? b.properties.time.split('.')[0] : b.properties.time;
+                    let timeA = a.properties.time;
+                    let timeB = b.properties.time;
+                    
+                    // USGS için timestamp'i tarihe çevir
+                    if (typeof timeA === 'number') {
+                        timeA = new Date(timeA).toISOString();
+                    }
+                    if (typeof timeB === 'number') {
+                        timeB = new Date(timeB).toISOString();
+                    }
+                    
+                    // EMSC için nokta sonrasını kaldır
+                    if (source === 'emsc') {
+                        timeA = timeA.split('.')[0];
+                        timeB = timeB.split('.')[0];
+                    }
+                    
                     return new Date(timeA) - new Date(timeB);
                 });
             }
