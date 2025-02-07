@@ -107,19 +107,26 @@ def get_earthquakes():
 
             # Convert EMSC format to GeoJSON
             features = []
-            for eq in data:
-                features.append({
-                    "type": "Feature",
-                    "geometry": {
-                        "type": "Point",
-                        "coordinates": [eq['longitude'], eq['latitude'], eq['depth']]
-                    },
-                    "properties": {
-                        "mag": eq['magnitude'],
-                        "place": eq['flynn_region'],
-                        "time": eq['time'].replace('Z', '+00:00')
-                    }
-                })
+            if isinstance(data, dict) and 'features' in data:
+                return jsonify(data)
+            elif isinstance(data, list):
+                for eq in data:
+                    try:
+                        features.append({
+                            "type": "Feature",
+                            "geometry": {
+                                "type": "Point",
+                                "coordinates": [eq['longitude'], eq['latitude'], eq['depth']]
+                            },
+                            "properties": {
+                                "mag": eq['magnitude'],
+                                "place": eq.get('flynn_region', 'Unknown location'),
+                                "time": eq['time'].replace('Z', '+00:00') if 'Z' in eq['time'] else eq['time']
+                            }
+                        })
+                    except (KeyError, TypeError) as e:
+                        print(f"Error processing earthquake: {e}")
+                        continue
 
             return jsonify({
                 "type": "FeatureCollection",
