@@ -346,9 +346,14 @@
             const source = document.getElementById('source').value;
             const response = await fetch(`/get_earthquakes?source=${source}&minMagnitude=${minMagnitude}&minDepth=${minDepth}&maxDepth=${maxDepth}&startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}&lat=${centerLat}&lon=${centerLon}&radius=${radius}`);
             const data = await response.json();
-            earthquakeData = data.features.sort((a, b) => 
-                new Date(a.properties.time) - new Date(b.properties.time)
-            );
+            earthquakeData = data.features;
+            if (data.features && data.features.length > 0) {
+                earthquakeData = data.features.sort((a, b) => {
+                    const timeA = source === 'emsc' ? a.properties.time.split('.')[0] : a.properties.time;
+                    const timeB = source === 'emsc' ? b.properties.time.split('.')[0] : b.properties.time;
+                    return new Date(timeA) - new Date(timeB);
+                });
+            }
             currentIndex = 0;
             stopAnimation();
             viewer.entities.removeAll();
