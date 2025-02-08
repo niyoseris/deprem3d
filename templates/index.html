@@ -402,7 +402,7 @@
             const position = Cesium.Cartesian3.fromDegrees(
                 lon,
                 lat,
-                depth * 1000 // convert km to meters, positive for upward direction
+                source === 'emsc' ? -depth * 1000 : depth * 1000 // EMSC için derinliği negatif yap
             );
 
             // Surface point (directly above the earthquake)
