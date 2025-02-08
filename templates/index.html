@@ -399,10 +399,11 @@
             const depth = earthquake.geometry.coordinates[2];
 
             // Earthquake center point (underground)
+            const source = earthquake.properties.auth?.toLowerCase() === 'emsc' ? 'emsc' : 'other';
             const position = Cesium.Cartesian3.fromDegrees(
                 lon,
                 lat,
-                source === 'emsc' ? -depth * 1000 : depth * 1000 // EMSC için derinliği negatif yap
+                source === 'emsc' ? -depth * 1000 : depth * 1000 // Only EMSC data will be negative
             );
 
             // Surface point (directly above the earthquake)
